@@ -1,0 +1,9 @@
+scripts/node_modules/
+scripts/bun.lock
+.DS_Store
+*.log
+.env
+.env.local
+dist/
+coverage/
+docs/
