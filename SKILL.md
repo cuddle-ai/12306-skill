@@ -89,22 +89,34 @@ ${BUN_X} {baseDir}/scripts/order.ts \
 
 ## Workflow
 
-### 1. Scene Matching
+### 1. Extract Known Info & Scene Matching
 
-If user input contains a scene name from EXTEND.md `scenes` (e.g., "回家", "出差上海"), use that scene's fields to pre-fill the clarification dialog. Otherwise, use only `preferences` for defaults.
+**Extract from user input first.** Parse the user's message for explicit information before any dialog:
 
-### 2. Clarification Dialog (single AskUserQuestion, 4 questions at once)
+| Field | Extraction patterns |
+|-------|-------------------|
+| 出发站 | "从X到Y", "X→Y", "X去Y", "X到Y" — X is from_station |
+| 到达站 | Same patterns — Y is to_station |
+| 出发日期 | "今天"/"明天"/"后天"/"周X"/"X月X日"/"MM-DD"/"YYYY-MM-DD" — resolve to absolute date |
+| 时段 | "上午"/"早上"/"下午"/"晚上"/specific time → map to period_from/period_to |
+| 车次类型 | "高铁"/"动车"/"普通" — map to train type codes |
 
-**Must always clarify before querying.** Preferences/scenes only provide default values.
+**Scene matching**: If user input also contains a scene name from EXTEND.md `scenes` (e.g., "回家", "出差上海"), merge the scene's fields. Scene values fill gaps not already provided by user input.
 
-AskUserQuestion with all 4 questions in one call:
+**Priority**: user explicit input > scene override > preferences > defaults
 
-- Q1: 出发站 (default from scene `from_station` or leave empty)
-- Q2: 到达站 (default from scene `to_station` or leave empty)
-- Q3: 出发日期 (required, no default)
-- Q4: 时段 (options: 上午/下午/全天, default from scene `period_from`/`period_to`)
+### 2. Clarification Dialog (only for missing/ambiguous fields)
 
-User confirms/modifies -> proceed to query. No second confirmation needed.
+**Only ask about fields not already determined.** If the user's message + scene + preferences cover all required fields (from, to, date), skip the dialog entirely and proceed directly to query.
+
+Build AskUserQuestion with **only** the unresolved questions (max 4, single call):
+
+- Q1: 出发站 — only if not extracted and no scene/preferences default
+- Q2: 到达站 — only if not extracted and no scene/preferences default
+- Q3: 出发日期 — only if not extracted (no default; required)
+- Q4: 时段 — only if not extracted and no scene/preferences default. Options: 上午/下午/全天
+
+If all fields are resolved, proceed to query without confirmation.
 
 ### 3. Query Tickets
 
@@ -114,7 +126,7 @@ ${BUN_X} {baseDir}/scripts/query.ts \
   --period-from <period_from> --period-to <period_to> --train-types <train_types>
 ```
 
-Use confirmed values from clarification dialog. `train_types` from preferences.
+Use values from: user input extraction > AskUserQuestion answers > scene > preferences. `train_types` from preferences or user-mentioned type ("高铁" etc).
 
 ### 4. Display Results with Recommendations
 
