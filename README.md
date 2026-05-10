@@ -9,7 +9,7 @@
 
 ## ✨ 效果示例
 
-<video src="https://github.com/cuddle-ai/12306-skill/raw/main/assets/demo.mp4" controls="controls" muted="muted" width="100%"></video>
+![demo](assets/demo.gif)
 
 ### 🔍 日常查询
 
